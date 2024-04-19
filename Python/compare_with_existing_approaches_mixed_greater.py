@@ -1,15 +1,19 @@
 """
 Author        : Jie Li, Innovision IP Ltd., and School of Mathematics Statistics
 				and Actuarial Science, University of Kent.
-Date          : 2024-04-19 19:07:18
-Last Revision : 2024-04-19 21:34:41
+Date          : 2024-04-19 21:00:12
+Last Revision : 2024-04-19 21:57:13
 Last Author   : Jie Li
-File Path     : /bigpast_repo/Python/compare_with_existing_approaches_mixed_less.py
+File Path     : /bigpast_repo/Python/compare_with_existing_approaches_mixed_greater.py
 Description   : This script is used to compare the performance of the proposed BIGPAST against existing approaches: z-score, t-score (Crawford & Howell, 1998), Crawford- Garthwaite Bayesian approach (Crawford & Garthwaite, 2007), and Anderson-Darling non-parametric approach (Anderson & Darling, 1954).
 
 The data are genereated using skew t distribution the severe skew settings of Section 3.1.1 in Crawford et al. (2006).
 
-The single case observations consist of 50% positive and 50% negative. The direction of alternative hypothesis is `less'.
+The single case observations consist of 50% positive and 50% negative. The direction of alternative hypothesis is `greater'.
+
+
+
+
 
 
 
@@ -53,13 +57,13 @@ stepsize = np.array([0.05, 0.05, 0.05, 0.05])
 cv = 1
 each = 100
 size = 2000
-# Alternative: less
+# Alternative: greater
 # actual conditions,
 # 0 or False: single case and control group comes from same distribution
 # 1 or True: single case and control group comes from different distribution
-actual_less = np.repeat((True, False), N_freq * m // 2)
-z_critical = norm.ppf(sig_level, 0, 1)
-t_critical = t.ppf(sig_level, n_all - 1)
+actual_greater = np.repeat((False, True), N_freq * m // 2)
+z_critical = norm.ppf(1 - sig_level, 0, 1)
+t_critical = t.ppf(1 - sig_level, n_all - 1)
 
 quantiles = np.array([sig_level / 2, 1 - sig_level / 2, sig_level, 1 - sig_level])
 critical_values = skewt.ppf(quantiles, alpha, df, loc, scale)
@@ -77,29 +81,29 @@ ad_pred = np.zeros((N_freq * m, len(n_all)))
 
 for j, (n, t_th) in enumerate(zip(n_all, t_critical)):
     data_control = skewt.rvs(alpha, df, loc, scale, size=(N_freq, n))
-    d_s1_less = np.random.uniform(critical_bounds[0], critical_values[2], m2)
-    d_s2_less = np.random.uniform(critical_values[2], critical_bounds[1], m2)
-    data_single_case = np.concatenate([d_s1_less, d_s2_less]).reshape((N_freq, m))
+    d_s1_greater = np.random.uniform(critical_bounds[0], critical_values[3], m2)
+    d_s2_greater = np.random.uniform(critical_values[3], critical_bounds[1], m2)
+    data_single_case = np.concatenate([d_s1_greater, d_s2_greater]).reshape((N_freq, m))
     # z-score
     x_bar = np.mean(data_control, axis=1, keepdims=True)
     s = np.std(data_control, axis=1, keepdims=True)
     z_hat = (data_single_case - x_bar) / s
-    z_hat_pred = z_hat < z_critical
-    conf_mat = confusion_matrix(actual_less, z_hat_pred.reshape((N_freq * m,)))
-    fpr_z_less = conf_mat[0, 1] / (conf_mat[0, 0] + conf_mat[0, 1])
-    tpr_z_less = conf_mat[1, 1] / (conf_mat[1, 0] + conf_mat[1, 1])
-    acc_z_less = (conf_mat[0, 0] + conf_mat[1, 1]) / N_freq / m
-    print(fpr_z_less, tpr_z_less, acc_z_less)
-    results_all[j, :, 0] = [fpr_z_less, tpr_z_less, acc_z_less]
+    z_hat_pred = z_hat > z_critical
+    conf_mat = confusion_matrix(actual_greater, z_hat_pred.reshape((N_freq * m,)))
+    fpr_z_greater = conf_mat[0, 1] / (conf_mat[0, 0] + conf_mat[0, 1])
+    tpr_z_greater = conf_mat[1, 1] / (conf_mat[1, 0] + conf_mat[1, 1])
+    acc_z_greater = (conf_mat[0, 0] + conf_mat[1, 1]) / N_freq / m
+    print(fpr_z_greater, tpr_z_greater, acc_z_greater)
+    results_all[j, :, 0] = [fpr_z_greater, tpr_z_greater, acc_z_greater]
     # t-score
     t_hat = z_hat * np.sqrt(n / (n + 1))
-    t_hat_pred = t_hat < t_th
-    conf_mat = confusion_matrix(actual_less, t_hat_pred.flatten())
-    fpr_t_less = conf_mat[0, 1] / (conf_mat[0, 0] + conf_mat[0, 1])
-    tpr_t_less = conf_mat[1, 1] / (conf_mat[1, 0] + conf_mat[1, 1])
-    acc_t_less = (conf_mat[0, 0] + conf_mat[1, 1]) / N_freq / m
-    print(fpr_t_less, tpr_t_less, acc_t_less)
-    results_all[j, :, 1] = [fpr_t_less, tpr_t_less, acc_t_less]
+    t_hat_pred = t_hat > t_th
+    conf_mat = confusion_matrix(actual_greater, t_hat_pred.flatten())
+    fpr_t_greater = conf_mat[0, 1] / (conf_mat[0, 0] + conf_mat[0, 1])
+    tpr_t_greater = conf_mat[1, 1] / (conf_mat[1, 0] + conf_mat[1, 1])
+    acc_t_greater = (conf_mat[0, 0] + conf_mat[1, 1]) / N_freq / m
+    print(fpr_t_greater, tpr_t_greater, acc_t_greater)
+    results_all[j, :, 1] = [fpr_t_greater, tpr_t_greater, acc_t_greater]
 
     for i, row in tqdm(enumerate(data_control)):
         ########### BIGPAST ##################
@@ -121,54 +125,60 @@ for j, (n, t_th) in enumerate(zip(n_all, t_critical)):
                 u_row[0], u_row[1], u_row[2], u_row[3], size=count * each
             )
             sample_b = np.append(sample_b, x_temp)
-        credible_int_bigpast[i, j] = np.quantile(sample_b, sig_level)
+        credible_int_bigpast[i, j] = np.quantile(sample_b, 1 - sig_level)
 
-        # less
-        bigpast_less = data_single_case[i, :] <= credible_int_bigpast[i, j]
-        bigpast_pred[m * i : m * (i + 1), j] = bigpast_less
+        # greater
+        bigpast_greater = data_single_case[i, :] >= credible_int_bigpast[i, j]
+        bigpast_pred[m * i : m * (i + 1), j] = bigpast_greater
 
         ########### CG ##################
-        # less
+        # greater
         cg_p_value = np.zeros(m)
-        cg_less = np.zeros(m)
-        d_less = data_single_case[i, :]
+        cg_greater = np.zeros(m)
+        d_greater = data_single_case[i, :]
         for k in range(m):
-            cg_p_value[k] = BTD(d_less[k], row, alternative="less")["p-value"]
+            cg_p_value[k] = BTD(d_greater[k], row, alternative="greater")["p-value"]
         cg_pred[m * i : m * (i + 1), j] = cg_p_value <= sig_level
 
         ########### AD ##################
-        # less
+        # greater
         ad = np.zeros(m)
         for k in range(m):
-            res = stats.anderson_ksamp([row, d_less[k : k + 1]])
+            res = stats.anderson_ksamp([row, d_greater[k : k + 1]])
             ad[k] = res.pvalue <= sig_level
         ad_pred[m * i : m * (i + 1), j] = ad
 
-    conf_mat = confusion_matrix(actual_less, bigpast_pred[:, j].reshape((N_freq * m,)))
-    fpr_bigpast_less = conf_mat[0, 1] / (conf_mat[0, 0] + conf_mat[0, 1])
-    tpr_bigpast_less = conf_mat[1, 1] / (conf_mat[1, 0] + conf_mat[1, 1])
-    acc_bigpast_less = (conf_mat[0, 0] + conf_mat[1, 1]) / N_freq / m
-    print(fpr_bigpast_less, tpr_bigpast_less, acc_bigpast_less)
-    results_all[j, :, 4] = [fpr_bigpast_less, tpr_bigpast_less, acc_bigpast_less]
+    conf_mat = confusion_matrix(
+        actual_greater, bigpast_pred[:, j].reshape((N_freq * m,))
+    )
+    fpr_bigpast_greater = conf_mat[0, 1] / (conf_mat[0, 0] + conf_mat[0, 1])
+    tpr_bigpast_greater = conf_mat[1, 1] / (conf_mat[1, 0] + conf_mat[1, 1])
+    acc_bigpast_greater = (conf_mat[0, 0] + conf_mat[1, 1]) / N_freq / m
+    print(fpr_bigpast_greater, tpr_bigpast_greater, acc_bigpast_greater)
+    results_all[j, :, 4] = [
+        fpr_bigpast_greater,
+        tpr_bigpast_greater,
+        acc_bigpast_greater,
+    ]
 
-    conf_mat = confusion_matrix(actual_less, cg_pred[:, j].reshape((N_freq * m,)))
-    fpr_cg_less = conf_mat[0, 1] / (conf_mat[0, 0] + conf_mat[0, 1])
-    tpr_cg_less = conf_mat[1, 1] / (conf_mat[1, 0] + conf_mat[1, 1])
-    acc_cg_less = (conf_mat[0, 0] + conf_mat[1, 1]) / N_freq / m
-    print(fpr_cg_less, tpr_cg_less, acc_cg_less)
-    results_all[j, :, 2] = [fpr_cg_less, tpr_cg_less, acc_cg_less]
+    conf_mat = confusion_matrix(actual_greater, cg_pred[:, j].reshape((N_freq * m,)))
+    fpr_cg_greater = conf_mat[0, 1] / (conf_mat[0, 0] + conf_mat[0, 1])
+    tpr_cg_greater = conf_mat[1, 1] / (conf_mat[1, 0] + conf_mat[1, 1])
+    acc_cg_greater = (conf_mat[0, 0] + conf_mat[1, 1]) / N_freq / m
+    print(fpr_cg_greater, tpr_cg_greater, acc_cg_greater)
+    results_all[j, :, 2] = [fpr_cg_greater, tpr_cg_greater, acc_cg_greater]
 
-    conf_mat = confusion_matrix(actual_less, ad_pred[:, j].reshape((N_freq * m,)))
-    fpr_ad_less = conf_mat[0, 1] / (conf_mat[0, 0] + conf_mat[0, 1])
-    tpr_ad_less = conf_mat[1, 1] / (conf_mat[1, 0] + conf_mat[1, 1])
-    acc_ad_less = (conf_mat[0, 0] + conf_mat[1, 1]) / N_freq / m
-    print(fpr_ad_less, tpr_ad_less, acc_ad_less)
-    results_all[j, :, 3] = [fpr_ad_less, tpr_ad_less, acc_ad_less]
+    conf_mat = confusion_matrix(actual_greater, ad_pred[:, j].reshape((N_freq * m,)))
+    fpr_ad_greater = conf_mat[0, 1] / (conf_mat[0, 0] + conf_mat[0, 1])
+    tpr_ad_greater = conf_mat[1, 1] / (conf_mat[1, 0] + conf_mat[1, 1])
+    acc_ad_greater = (conf_mat[0, 0] + conf_mat[1, 1]) / N_freq / m
+    print(fpr_ad_greater, tpr_ad_greater, acc_ad_greater)
+    results_all[j, :, 3] = [fpr_ad_greater, tpr_ad_greater, acc_ad_greater]
 
 # %%
 # save the results
 np.save(
-    f"../Data/bigpast_vs_others_mixed_less_N{N_freq}m{m}alpha{alpha}df{df}.npy",
+    f"../Data/bigpast_vs_others_mixed_greater_N{N_freq}m{m}alpha{alpha}df{df}.npy",
     {
         "results_all": results_all,
         # "bigpast_results": bigpast_results,
