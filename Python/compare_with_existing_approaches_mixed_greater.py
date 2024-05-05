@@ -2,9 +2,9 @@
 Author        : Jie Li, Innovision IP Ltd., and School of Mathematics Statistics
 				and Actuarial Science, University of Kent.
 Date          : 2024-04-19 21:00:12
-Last Revision : 2024-04-19 21:57:13
+Last Revision : 2024-05-05 09:43:12
 Last Author   : Jie Li
-File Path     : /bigpast_repo/Python/compare_with_existing_approaches_mixed_greater.py
+File Path     : /BIGPAST/Python/compare_with_existing_approaches_mixed_greater.py
 Description   : This script is used to compare the performance of the proposed BIGPAST against existing approaches: z-score, t-score (Crawford & Howell, 1998), Crawford- Garthwaite Bayesian approach (Crawford & Garthwaite, 2007), and Anderson-Darling non-parametric approach (Anderson & Darling, 1954).
 
 The data are genereated using skew t distribution the severe skew settings of Section 3.1.1 in Crawford et al. (2006).
@@ -18,7 +18,7 @@ The single case observations consist of 50% positive and 50% negative. The direc
 
 
 
-Copyright (c) 2024, Jie Li, jl725@kent.ac.uk
+Copyright (c) 2024, Jie Li, jie.li@innovision-ip.co.uk and jl725@kent.ac.uk
 All Rights Reserved.
 """
 

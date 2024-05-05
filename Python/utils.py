@@ -2,9 +2,9 @@
 Author        : Jie Li, Innovision IP Ltd., and School of Mathematics Statistics
 				and Actuarial Science, University of Kent.
 Date          : 2024-04-18 14:40:57
-Last Revision : 2024-04-18 20:59:08
+Last Revision : 2024-05-05 10:12:52
 Last Author   : Jie Li
-File Path     : /bigpast_repo/Python/utils.py
+File Path     : /BIGPAST/Python/utils.py
 Description   :
 
 
@@ -317,3 +317,209 @@ def BTD(case, controls, sd=None, sample_size=None, alternative="less", n_iter=10
         "mu_hat": mu_hat,
         "theta_hat": theta_hat,
     }
+
+
+def process_case(data, alpha, df, loc, scale):
+    """obtain the results of simulation using different priors of the skew-t distribution
+
+    Parameters
+    ----------
+    data : float
+        2D array of data
+    alpha : float
+        the skewness parameter
+    df : positive float
+        the degree of freedom
+    loc : float
+        the location parameter
+    scale : float
+        the scale parameter
+
+    Returns
+    -------
+    dict
+        the result of simulation using different priors
+    """
+    num_cases = data.shape[1]
+    result_map = np.zeros((num_cases, 4, 2))
+    result_map_b = np.zeros((num_cases, 4))
+    result_map_d = np.zeros((num_cases, 4))
+    result_mle = np.zeros((num_cases, 4))
+    for j in range(num_cases):
+        init_params = [alpha[j] * 1.1, df[j] * 1.1, loc * 1.1, scale * 1.1]
+        data_j = data[:, j]
+        try:
+            result_map[j, :, 0] = map_posterior(data_j, 0, init_params)
+        except Exception as e:
+            print(f"An error occurred: {e}")
+        try:
+            result_map[j, :, 1] = map_posterior(data_j, 1, init_params)
+        except Exception as e:
+            print(f"An error occurred: {e}")
+        try:
+            result_map_b[j, :] = map_posterior_b(data_j, init_params)
+        except Exception as e:
+            print(f"An error occurred: {e}")
+        try:
+            result_map_d[j, :] = map_posterior_d(data_j, init_params)
+        except Exception as e:
+            print(f"An error occurred: {e}")
+        try:
+            result_mle[j, :] = skewt_fit(data_j, init_params)
+        except Exception as e:
+            print(f"An error occurred: {e}")
+    return result_map, result_map_b, result_map_d, result_mle
+
+
+def map_posterior(data, cv, init_params=np.array([1, 1, 1, 1])):
+    bounds = Bounds([-np.inf, 1e-4, -np.inf, 1e-4], [np.inf, 1e8, np.inf, 1e8])
+    res = minimize(
+        fun=neg_log_posterior,
+        x0=init_params,
+        args=(data, cv),
+        bounds=bounds,
+        method="L-BFGS-B",
+        options={"ftol": 1e-10},
+    )
+    if res.success:
+        fitted_params = res.x
+        return fitted_params
+    else:
+        return np.repeat(np.nan, 4)
+
+
+def map_posterior_d(data, init_params=np.array([1, 1, 1, 1])):
+    bounds = Bounds([-np.inf, 1e-4, -np.inf, 1e-4], [np.inf, 1e8, np.inf, 1e8])
+    res = minimize(
+        fun=neg_log_posterior_d,
+        x0=init_params,
+        args=(data,),
+        bounds=bounds,
+        method="L-BFGS-B",
+    )
+    if res.success:
+        fitted_params = res.x
+        return fitted_params
+    else:
+        raise ValueError(res.message)
+
+
+def map_posterior_b(data, init_params=np.array([1, 1, 1, 1])):
+    bounds = Bounds([-np.inf, 1e-4, -np.inf, 1e-4], [np.inf, 1e8, np.inf, 1e8])
+    res = minimize(
+        fun=neg_log_posterior_b,
+        x0=init_params,
+        args=(data,),
+        bounds=bounds,
+        method="L-BFGS-B",
+    )
+    if res.success:
+        fitted_params = res.x
+        return fitted_params
+    else:
+        raise ValueError(res.message)
+
+
+def neg_log_posterior_b(params, data):
+    alpha, df, loc, scale = params
+    return (
+        -nu_prior_log(df)
+        - alpha_prior_log_given_nu_t(alpha)
+        - log_likelihood_standard(alpha, df, loc, scale, data)
+        + np.log(scale)
+    )
+
+
+def alpha_prior_log_given_nu_t(alpha):
+    return -0.75 * np.log(np.pi**2 + 8 * alpha**2)
+
+
+def neg_log_posterior_d(params, data):
+    alpha, df, loc, scale = params
+    return (
+        -nu_prior_log(df)
+        + np.log(np.pi * (1 + alpha**2))
+        - log_likelihood_standard(alpha, df, loc, scale, data)
+        + np.log(scale)
+    )
+
+
+def nu_prior_log(v):
+    if v <= 0:
+        raise ValueError("v must be greater than 0")
+    a = (v / (v + 3)) ** (1 / 2) * (
+        polygamma(1, v / 2) - polygamma(1, (v + 1) / 2) - 2 * (v + 3) / v / (v + 1) ** 2
+    ) ** (1 / 2)
+    return np.log(a)
+
+
+def alpha_prior_log_given_nu(alpha, v):
+    sigma = compute_sigma_nu(v + 1)
+    if v <= 0:
+        raise ValueError("v must be greater than 0")
+    a1 = (
+        0.5 * np.log(np.pi)
+        + loggamma(v / 2 + 1)
+        - np.log(np.abs(alpha))
+        - loggamma((v + 1) / 2)
+    )
+    a2 = 0.5 * np.log(
+        hyp2f1(1 / 2, v + 1, (v + 1) / 2, -(alpha**2) / sigma**2)
+        - hyp2f1(1 / 2, v + 2, (v + 1) / 2, -(alpha**2) / sigma**2)
+    )
+    return a1 + a2
+
+
+def st_logli(dp, y):
+    """the negative log-likelihood function of skew-t distribution
+
+    Parameters
+    ----------
+    dp : array | list
+        the direct parameters of the skew-t distribution in order: alpha, degrees of freedom, location and scale.
+    y : array
+        the data
+
+    Returns
+    -------
+    float
+        the negative log-likelihood function
+    """
+    a, df, loc, scale = dp[0], dp[1], dp[2], dp[3]
+    if scale <= 0 or df <= 0:
+        return np.nan
+    else:
+        logL = np.sum(skewt.logpdf(y, a=a, df=df, loc=loc, scale=scale))
+        logL = np.where(np.isinf(logL), -1e6, logL)
+    return -2 * logL
+
+
+def skewt_fit(data, init_params=np.array([1, 1, 1, 1])):
+    """This function fit the parameters of skew-t distribution by using the algorithm `L-BFGS-B`
+
+    Parameters
+    ----------
+    data : 1D array
+        the sample data
+    init_params : list, optional
+        the initial values of direct parameters, by default np.array([1, 1, 1, 1])
+
+    Returns
+    -------
+    array : np.array
+        the estimation of direct parameters: location, scale, shape, and degree of freedom.
+
+    Raises
+    ------
+    ValueError
+        the message from minimizer
+    """
+    bounds = Bounds([-np.inf, 1e-4, -np.inf, 1e-4], [np.inf, np.inf, np.inf, np.inf])
+    res = minimize(
+        fun=st_logli, x0=init_params, args=(data,), bounds=bounds, method="L-BFGS-B"
+    )
+    if res.success:
+        fitted_params = res.x
+        return fitted_params
+    else:
+        return np.repeat(np.nan, 4)

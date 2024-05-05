@@ -15,7 +15,7 @@ The data are genereated using skew t distribution the severe skew settings of Se
 
 
 
-Copyright (c) 2024, Jie Li, jl725@kent.ac.uk
+Copyright (c) 2024, Jie Li, jie.li@innovision-ip.co.uk and jl725@kent.ac.uk
 All Rights Reserved.
 """
 

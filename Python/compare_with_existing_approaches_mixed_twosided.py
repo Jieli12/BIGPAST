@@ -18,7 +18,7 @@ The single case observations consist of 50% positive and 50% negative. The direc
 
 
 
-Copyright (c) 2024, Jie Li, jl725@kent.ac.uk
+Copyright (c) 2024, Jie Li, jie.li@innovision-ip.co.uk and jl725@kent.ac.uk
 All Rights Reserved.
 """
 
