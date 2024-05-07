@@ -2,7 +2,7 @@
 Author        : Jie Li, Innovision IP Ltd., and School of Mathematics Statistics
 				and Actuarial Science, University of Kent.
 Date          : 2024-04-18 14:40:57
-Last Revision : 2024-05-07 10:48:53
+Last Revision : 2024-05-07 12:09:21
 Last Author   : Jie Li
 File Path     : /BIGPAST/Python/utils.py
 Description   :
@@ -584,3 +584,65 @@ def metropolis_hastings(init_params, data, size=10000, burn_in=0.4, stepsize=0.5
         i += 1
 
     return samples[int(size * burn_in) :, :]
+
+
+def generate_single_case(
+    n1, n2, alpha, df, loc, scale, sig_level, alternative, threshold=20
+):
+    """This function generates a single-subject observations based on the given parameters.
+
+    Parameters
+    ----------
+    n1 : int
+        the number of positive observations
+    n2 : int
+        the number of negative observations
+    alpha : float
+        the skewness of the skew-t distribution
+    df : float
+        the degrees of freedom
+    loc : float
+        the location parameter
+    scale : float
+        the scale parameter
+    sig_level : float
+        the significance level
+    alternative : string
+        the direction of alternative hypothesis: "two_sided", "less", or "greater"
+    threshold : int, optional
+        the threshold for data generation, by default 20
+
+    Returns
+    -------
+    float
+        the single-subject observations
+    """
+    if alternative == "two_sided":
+        q = [sig_level / 2, sig_level, 1 - sig_level, 1 - sig_level / 2]
+        quantile = skewt.ppf(q, a=alpha, df=df, loc=loc, scale=scale)
+        x_single_s1_1 = np.random.uniform(
+            -threshold + quantile[0], quantile[0], int(n1 * 0.5)
+        )
+        x_single_s1_2 = np.random.uniform(
+            quantile[3], threshold + quantile[3], n1 - int(n1 * 0.5)
+        )
+        x_single_s2_1 = np.random.uniform(quantile[0], quantile[1], int(n2 * 0.5))
+        x_single_s2_2 = np.random.uniform(quantile[2], quantile[3], n2 - int(n2 * 0.5))
+        x_single = np.concatenate(
+            [x_single_s1_1, x_single_s1_2, x_single_s2_1, x_single_s2_2]
+        )
+    elif alternative == "less":
+        q = [sig_level, 2 * sig_level]
+        quantile = skewt.ppf(q, a=alpha, df=df, loc=loc, scale=scale)
+        x_single_s1 = np.random.uniform(-threshold + quantile[0], quantile[0], n1)
+        x_single_s2 = np.random.uniform(quantile[0], quantile[1], n2)
+        x_single = np.concatenate([x_single_s1, x_single_s2])
+    elif alternative == "greater":
+        q = [1 - 2 * sig_level, 1 - sig_level]
+        quantile = skewt.ppf(q, a=alpha, df=df, loc=loc, scale=scale)
+        x_single_s1 = np.random.uniform(quantile[1], quantile[1] + threshold, n1)
+        x_single_s2 = np.random.uniform(quantile[0], quantile[1], n2)
+        x_single = np.concatenate([x_single_s1, x_single_s2])
+
+    underlying = np.concatenate([np.repeat("P", n1), np.repeat("N", n2)])
+    return x_single, underlying
