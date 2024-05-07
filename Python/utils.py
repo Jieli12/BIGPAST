@@ -2,7 +2,7 @@
 Author        : Jie Li, Innovision IP Ltd., and School of Mathematics Statistics
 				and Actuarial Science, University of Kent.
 Date          : 2024-04-18 14:40:57
-Last Revision : 2024-05-05 10:12:52
+Last Revision : 2024-05-07 09:56:21
 Last Author   : Jie Li
 File Path     : /BIGPAST/Python/utils.py
 Description   :
@@ -523,3 +523,42 @@ def skewt_fit(data, init_params=np.array([1, 1, 1, 1])):
         return fitted_params
     else:
         return np.repeat(np.nan, 4)
+
+
+def metropolis_hastings(init_params, data, size=10000, burn_in=0.4, stepsize=0.5, cv=1):
+    num_params = len(init_params)
+    samples = np.zeros((size, num_params))
+    params_curr = init_params
+    stepsize = np.array(stepsize)
+
+    if stepsize.size == 4:
+        a_stepsize, df_stepsize, loc_stepsize, scale_stepsize = stepsize
+    else:
+        a_stepsize = df_stepsize = loc_stepsize = scale_stepsize = stepsize
+    i = 0
+    while i < size:
+        a_curr, df_curr, loc_curr, scale_curr = params_curr
+        df_new = df_curr + df_stepsize * norm.ppf(
+            norm.cdf(-df_curr / df_stepsize)
+            + np.random.rand() * norm.cdf(df_curr / df_stepsize)
+        )
+        p_df = norm.logcdf(df_curr / df_stepsize) - norm.logcdf(df_new / df_stepsize)
+        scale_new = scale_curr + scale_stepsize * norm.ppf(
+            norm.cdf(-scale_curr / scale_stepsize)
+            + np.random.rand() * norm.cdf(scale_curr / scale_stepsize)
+        )
+        p_scale = norm.logcdf(scale_curr / scale_stepsize) - norm.logcdf(
+            scale_new / scale_stepsize
+        )
+        a_new = a_curr + np.random.normal(0, a_stepsize, 1)
+        loc_new = loc_curr + np.random.normal(0, loc_stepsize, 1)
+        params_new = np.array([a_new[0], df_new, loc_new[0], scale_new])
+        prob_new = -neg_log_posterior(params_new, data, cv=cv)
+        prob_curr = -neg_log_posterior(params_curr, data, cv=cv)
+        A = prob_new - prob_curr + p_df + p_scale
+        if np.log(np.random.rand()) <= A:
+            params_curr = params_new
+        samples[i, :] = params_curr.flatten()
+        i += 1
+
+    return samples[int(size * burn_in) :, :]
