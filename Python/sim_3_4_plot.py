@@ -2,7 +2,7 @@
 Author        : Jie Li, Innovision IP Ltd., and School of Mathematics Statistics
 				and Actuarial Science, University of Kent.
 Date          : 2024-05-07 14:42:32
-Last Revision : 2024-05-07 14:47:18
+Last Revision : 2024-05-07 14:48:55
 Last Author   : Jie Li
 File Path     : /BIGPAST/Python/sim_3_4_plot.py
 Description   :
@@ -66,7 +66,7 @@ for j in range(10):
         ax.yaxis.grid(True)
         ax.set_xlabel("Four separate methods")
 
-    figname = f"../Data/Result_n{n}_alpha{int(alpha[j])}_df{int(df[j])}.pdf"
+    figname = f"../figures/Result_n{n}_alpha{int(alpha[j])}_df{int(df[j])}.pdf"
     plt.savefig(figname, format="pdf")
 
 
