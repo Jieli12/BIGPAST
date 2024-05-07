@@ -2,7 +2,7 @@
 Author        : Jie Li, Innovision IP Ltd., and School of Mathematics Statistics
 				and Actuarial Science, University of Kent.
 Date          : 2024-04-18 14:40:57
-Last Revision : 2024-05-07 12:09:21
+Last Revision : 2024-05-07 12:29:22
 Last Author   : Jie Li
 File Path     : /BIGPAST/Python/utils.py
 Description   :
@@ -22,7 +22,7 @@ All Rights Reserved.
 
 import numpy as np
 import scipy.stats as stats
-from scipy.optimize import Bounds, minimize
+from scipy.optimize import Bounds, basinhopping, minimize
 from scipy.special import beta, gamma, hyp2f1, loggamma, polygamma
 from scipy.stats import norm
 from skewt_scipy.skewt import skewt
@@ -586,7 +586,7 @@ def metropolis_hastings(init_params, data, size=10000, burn_in=0.4, stepsize=0.5
     return samples[int(size * burn_in) :, :]
 
 
-def generate_single_case(
+def generate_single_subject(
     n1, n2, alpha, df, loc, scale, sig_level, alternative, threshold=20
 ):
     """This function generates a single-subject observations based on the given parameters.
@@ -646,3 +646,123 @@ def generate_single_case(
 
     underlying = np.concatenate([np.repeat("P", n1), np.repeat("N", n2)])
     return x_single, underlying
+
+
+def compute_fdr_acc(
+    data,
+    init_params,
+    x_single,
+    stepsize,
+    underlying,
+    sig_level,
+    alternative,
+    each=100,
+    size=10000,
+    burn_in=0.5,
+    cv=1,
+):
+    """This function computes the false discovery rate and accuracy of the skew-t distribution function.
+
+    Parameters
+    ----------
+    data : float
+        the data
+    init_params : float array
+        the initial parameters of the skew-t distribution
+    x_single : float
+        the single-subject observations
+    stepsize : float
+        the step size of MH algorithm
+    underlying : logical
+        the underlying truth of the single-subject observations
+    sig_level : float
+        the significance level
+    alternative : string
+        the direction of alternative hypothesis: "two_sided", "less", or "greater"
+    each : int, optional
+        the $s$ in paper, by default 100
+    size : int, optional
+        the sample size of MH algorithm, by default 10000
+    burn_in : float, optional
+        the burn in rate, by default 0.5
+    cv : int, optional
+        the value in Theorem 1 of the paper, by default 1
+
+    Returns
+    -------
+    float
+        the results of false discovery rate and accuracy of different methods
+    """
+    if alternative == "two_sided":
+        quan_int = [sig_level / 2, 1 - sig_level / 2]
+    elif alternative == "less":
+        quan_int = sig_level
+    elif alternative == "greater":
+        quan_int = 1 - sig_level
+    sample_param = metropolis_hastings(
+        init_params, data, size=size, burn_in=burn_in, stepsize=stepsize, cv=cv
+    )
+    accept_rate = np.mean(np.diff(sample_param, axis=0) != 0)
+    unqiue_rows, counts = np.unique(sample_param, axis=0, return_counts=True)
+    sample_b = np.array([])
+    for row, count in zip(unqiue_rows, counts):
+        x_temp = skewt.rvs(row[0], row[1], row[2], row[3], size=count * each)
+        sample_b = np.append(sample_b, x_temp)
+    credible_int = np.quantile(sample_b, quan_int)
+
+    r_cg = contingency_table(x_single, credible_int, underlying, alternative)
+    # frequency analysis
+    conf_int = np.quantile(data, quan_int)
+    r_freq = contingency_table(x_single, conf_int, underlying, alternative)
+    #  for the MLE
+    para_mle = skewt_fit(data, init_params)
+    conf_int_mle = skewt.ppf(
+        quan_int, para_mle[0], para_mle[1], para_mle[2], para_mle[3]
+    )
+    r_mle = contingency_table(x_single, conf_int_mle, underlying, alternative)
+    # for MAP
+    para_map = map_posterior_global(data, cv=1, init_params=init_params)
+    conf_int_map = skewt.ppf(
+        quan_int, para_map[0], para_map[1], para_map[2], para_map[3]
+    )
+    r_map = contingency_table(x_single, conf_int_map, underlying, alternative)
+
+    return np.stack([r_cg, r_freq, r_mle, r_map], axis=0), accept_rate
+
+
+def contingency_table(x_single, interval, underlying, alternative):
+    # underlying: 0 represents H0, i.e negative; 1 represents H1, i.e. positive
+    if alternative == "two_sided":
+        pred_positive = np.logical_or(x_single < interval[0], x_single > interval[1])
+        pred_negative = np.logical_and(x_single >= interval[0], x_single <= interval[1])
+    elif alternative == "less":
+        pred_positive = x_single < interval
+        pred_negative = x_single >= interval
+    elif alternative == "greater":
+        pred_positive = x_single > interval
+        pred_negative = x_single <= interval
+    n_tp = np.sum(np.logical_and(pred_positive, underlying == "P"))
+    n_fp = np.sum(np.logical_and(pred_positive, underlying == "N"))
+    n_fn = np.sum(np.logical_and(pred_negative, underlying == "P"))
+    n_tn = np.sum(np.logical_and(pred_negative, underlying == "N"))
+    return np.array([n_tp, n_fp, n_fn, n_tn])
+
+
+def map_posterior_global(data, cv, init_params=np.array([1, 1, 1, 1])):
+    """This function computes the MAP estimate of the skew-t distribution using the global optimization algorithm."""
+    bounds = Bounds([-np.inf, 1e-4, -np.inf, 1e-4], [np.inf, 1e8, np.inf, 1e8])
+    minimizer_kwargs = {
+        "method": "L-BFGS-B",
+        "bounds": bounds,
+        "args": (data, cv),
+        "tol": 1e-10,
+    }
+    res = basinhopping(
+        neg_log_posterior, x0=init_params, minimizer_kwargs=minimizer_kwargs, niter=100
+    )
+
+    if res.lowest_optimization_result.success:
+        fitted_params = res.x
+        return fitted_params
+    else:
+        return np.repeat(np.nan, 4)
