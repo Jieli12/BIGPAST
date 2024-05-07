@@ -2,7 +2,7 @@
 Author        : Jie Li, Innovision IP Ltd., and School of Mathematics Statistics
 				and Actuarial Science, University of Kent.
 Date          : 2024-04-18 14:40:57
-Last Revision : 2024-05-07 09:56:21
+Last Revision : 2024-05-07 10:48:53
 Last Author   : Jie Li
 File Path     : /BIGPAST/Python/utils.py
 Description   :
@@ -22,7 +22,7 @@ All Rights Reserved.
 
 import numpy as np
 import scipy.stats as stats
-from scipy.optimize import Bounds, basinhopping, minimize
+from scipy.optimize import Bounds, minimize
 from scipy.special import beta, gamma, hyp2f1, loggamma, polygamma
 from scipy.stats import norm
 from skewt_scipy.skewt import skewt
@@ -526,6 +526,28 @@ def skewt_fit(data, init_params=np.array([1, 1, 1, 1])):
 
 
 def metropolis_hastings(init_params, data, size=10000, burn_in=0.4, stepsize=0.5, cv=1):
+    """This script carries out the metropolis hastings algorithm to sample the parameters of the skew-t distribution.
+
+    Parameters
+    ----------
+    init_params : float
+        the initial parameters
+    data : float
+        the sample data
+    size : int, optional
+        the smaple size of MH algorithm, by default 10000
+    burn_in : float, optional
+        the burn-in rate, by default 0.4
+    stepsize : float, optional
+        the step size for proposal, by default 0.5
+    cv : int, optional
+        the value in Theorem 1 of the paper, by default 1
+
+    Returns
+    -------
+    float
+        the samples of the parameters
+    """
     num_params = len(init_params)
     samples = np.zeros((size, num_params))
     params_curr = init_params
