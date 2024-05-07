@@ -2,7 +2,7 @@
 Author        : Jie Li, Innovision IP Ltd., and School of Mathematics Statistics
 				and Actuarial Science, University of Kent.
 Date          : 2024-05-07 12:00:40
-Last Revision : 2024-05-07 12:57:13
+Last Revision : 2024-05-07 14:29:37
 Last Author   : Jie Li
 File Path     : /BIGPAST/Python/sim_3_4.py
 Description   : This is a command line script which uses the parallel computation. The default number of CPU cores is 90. Please adjust the number of CPU cores according to your machine. The script generates the boxplot of FDR and accuracy for the four methods: MH, MAP, NP, and MLE. The script saves the boxplot in the `Data` folder. The script also saves the results in the joblib file in the Data folder.
@@ -99,5 +99,5 @@ for ax in [ax1, ax2]:
     ax.yaxis.grid(True)
     ax.set_xlabel("Four separate methods")
 
-figname = f"../Data/Result_n{n}_alpha{alpha}_df{df}_alternative{alternative}.eps"
+figname = f"../Data/Result_n{n}_alpha{alpha}_df{df}_alternative{alternative}.pdf"
 plt.savefig(figname, format=".pdf")
