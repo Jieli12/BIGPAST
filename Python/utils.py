@@ -2,7 +2,7 @@
 Author        : Jie Li, Innovision IP Ltd., and School of Mathematics Statistics
 				and Actuarial Science, University of Kent.
 Date          : 2024-04-18 14:40:57
-Last Revision : 2024-05-07 12:29:22
+Last Revision : 2024-05-07 12:40:17
 Last Author   : Jie Li
 File Path     : /BIGPAST/Python/utils.py
 Description   :
@@ -710,10 +710,10 @@ def compute_fdr_acc(
         sample_b = np.append(sample_b, x_temp)
     credible_int = np.quantile(sample_b, quan_int)
 
-    r_cg = contingency_table(x_single, credible_int, underlying, alternative)
-    # frequency analysis
+    r_mh = contingency_table(x_single, credible_int, underlying, alternative)
+    # NP analysis
     conf_int = np.quantile(data, quan_int)
-    r_freq = contingency_table(x_single, conf_int, underlying, alternative)
+    r_np = contingency_table(x_single, conf_int, underlying, alternative)
     #  for the MLE
     para_mle = skewt_fit(data, init_params)
     conf_int_mle = skewt.ppf(
@@ -727,7 +727,7 @@ def compute_fdr_acc(
     )
     r_map = contingency_table(x_single, conf_int_map, underlying, alternative)
 
-    return np.stack([r_cg, r_freq, r_mle, r_map], axis=0), accept_rate
+    return np.stack([r_mh, r_map, r_np, r_mle], axis=0), accept_rate
 
 
 def contingency_table(x_single, interval, underlying, alternative):
