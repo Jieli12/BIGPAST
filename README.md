@@ -25,11 +25,16 @@ python sim_3_1_result.py
 
 ### Comparison with the existing approaches
 
-This simulation aims to compare the results of BIGPAST against the results of the $t$-score(Crawford and Howell, 1998 [[1](#1)]), Crawford and Garthwaite Bayesian framework(Crawford and Garthwaite, 2007), and Anderson-Darling non-parametric method(Scholz and Stephens, 1987).
+This simulation aims to compare the results of BIGPAST against the results of the $t$-score [[1]](#1), Crawford and Garthwaite Bayesian framework [[2]](#2), and Anderson-Darling non-parametric method [[3]](#3).
 
 ### References
 
 <a id="1">[1]</a>
 Crawford, J. R., & Howell, D. C. (1998). Comparing an individual’s test score against norms derived
-from small samples. The Clinical Neuropsychologist, 12(4), 482–486. <https://doi.org/10.1076/>
-clin.12.4.482.7241
+from small samples. The Clinical Neuropsychologist, 12(4), 482–486. <https://doi.org/10.1076/clin.12.4.482.7241>
+
+<a id="2">[2]</a>
+Crawford, J. R., & Garthwaite, P. H. (2007). Comparison of a single case to a control or normative sample in neuropsychology: Development of a Bayesian approach. Cognitive Neuropsychology, 24(4), 343–372. <https://doi.org/10.1080/02643290701290146>
+
+<a id="3">[3]</a>
+Scholz, F. W., & Stephens, M. A. (1987). K-sample anderson-darling tests. Journal of the American Statistical Association, 82(399), 918–924. <http://www.jstor.org/stable/2288805>
