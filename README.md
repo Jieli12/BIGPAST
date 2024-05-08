@@ -4,7 +4,7 @@ This repository **BIGPAST** contains the Python scripts to reproduce the simulat
 
 ## Requirement
 
-This repository depends on the Python package [skewt-scipy](https://pypi.org/project/skewt-scipy/). To install it, please run the following command in terminal.
+This repository relies on the Python package [skewt-scipy](https://pypi.org/project/skewt-scipy/). To install this package, execute the following command in your terminal:
 
 ```bash
 pip install skewt-scipy
@@ -55,7 +55,7 @@ python sim_3_3_plot.py
 We also provide the intermediate results needed to generate Figure 1 from the main paper. This allows you to swiftly reproduce Figure 1 by simply executing the following command:
 
 ```bash
-# Please do not run sim_3_3.py as it will rewrite our intermediate result.
+# Please do not run sim_3_3.py as it will rewrite our intermediate results.
 python sim_3_3_plot.py
 ```
 
@@ -77,6 +77,13 @@ The explanations for these flags are as follows:
 Executing the above command will automatically store the results in the `Data` directory. To reproduce Table 4 from the main paper, you can experiment with all the pairs of $(\alpha, \nu)$ listed in Table 4. Please be aware that the default setting for parallel computation utilizes 90 CPU cores. Adjust this setting to match your computer's operating environment. Finally, to generate Figure 3 of the main paper, just run
 
 ```bash
+python sim_3_4_plot.py
+```
+
+Alternatively, if you prefer not to wait for the computations to complete on your machine, we've provided intermediate results in the `Data` directory. In this case, you can simply execute the following command:
+
+```bash
+# Please do not run sim_3_4.py as it will rewrite our intermediate results.
 python sim_3_4_plot.py
 ```
 
