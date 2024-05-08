@@ -50,6 +50,7 @@ To fully replicate the results presented in Figure 1 of the main paper, please e
 ```bash
 python sim_3_3.py
 python sim_3_3_plot.py
+The figures can be found in the `figures` directory.
 ```
 
 We also provide the intermediate results needed to generate Figure 1 from the main paper. This allows you to swiftly reproduce Figure 1 by simply executing the following command:
@@ -58,6 +59,8 @@ We also provide the intermediate results needed to generate Figure 1 from the ma
 # Please do not run sim_3_3.py as it will rewrite our intermediate results.
 python sim_3_3_plot.py
 ```
+
+The figures can be found in the `figures` directory.
 
 ### Comparison study with other frameworks
 
@@ -86,6 +89,8 @@ Alternatively, if you prefer not to wait for the computations to complete on you
 # Please do not run sim_3_4.py as it will rewrite our intermediate results.
 python sim_3_4_plot.py
 ```
+
+The figures can be found in the `figures` directory.
 
 ### References
 
